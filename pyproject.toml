@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "research-map"
+version = "0.1.0"
+description = "A research workspace that indexes papers, answers questions with citations, and builds a knowledge graph of the literature."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "Pranay Nallanagula" },
+]
+dependencies = []
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
