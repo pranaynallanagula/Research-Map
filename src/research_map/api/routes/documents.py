@@ -11,11 +11,8 @@ from research_map.core.config import Settings, get_settings
 from research_map.db.models import DocumentStatus
 from research_map.db.repositories import DocumentRepository, ProjectRepository
 from research_map.db.session import get_db
-from research_map.ingestion.storage import (
-    StoredUpload,
-    UploadValidationError,
-    store_pdf,
-)
+from research_map.ingestion.storage import StoredUpload, store_pdf
+from research_map.ingestion.validation import DocumentValidationError
 
 router = APIRouter(
     prefix="/projects/{project_id}/documents",
@@ -59,12 +56,19 @@ async def upload_document(
 
     try:
         stored_upload = await store_pdf(file, project_id, settings)
-    except UploadValidationError as exc:
+    except DocumentValidationError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     filename = Path(file.filename or "research-paper.pdf").name
     title = Path(filename).stem or "Untitled research paper"
     document_repository = DocumentRepository(db)
+
+    if document_repository.get_by_content_hash(project_id, stored_upload.content_hash):
+        _remove_upload(stored_upload)
+        raise HTTPException(
+            status_code=409,
+            detail="This document is already in the research project",
+        )
 
     try:
         document = document_repository.create(

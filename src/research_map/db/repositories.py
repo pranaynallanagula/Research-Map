@@ -81,6 +81,17 @@ class DocumentRepository:
     def get(self, document_id: uuid.UUID) -> Document | None:
         return self.session.get(Document, document_id)
 
+    def get_by_content_hash(
+        self,
+        project_id: uuid.UUID,
+        content_hash: str,
+    ) -> Document | None:
+        statement = select(Document).where(
+            Document.project_id == project_id,
+            Document.content_hash == content_hash,
+        )
+        return self.session.scalars(statement).one_or_none()
+
     def list_for_project(
         self,
         project_id: uuid.UUID,

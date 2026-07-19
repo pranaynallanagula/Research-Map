@@ -6,13 +6,14 @@ from uuid import UUID, uuid4
 from fastapi import UploadFile
 
 from research_map.core.config import Settings
+from research_map.ingestion.validation import (
+    DocumentValidationError,
+    validate_filename,
+    validate_pdf_signature,
+    validate_size,
+)
 
 CHUNK_SIZE = 1024 * 1024
-PDF_SIGNATURE = b"%PDF-"
-
-
-class UploadValidationError(ValueError):
-    """Raised when an uploaded file does not meet storage requirements."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,12 +32,7 @@ async def store_pdf(
     """Stream a PDF to disk while calculating its content hash."""
 
     filename = (file.filename or "").strip()
-    if not filename:
-        raise UploadValidationError("A filename is required")
-
-    max_size = settings.max_upload_size_mb * 1024 * 1024
-    if max_size <= 0:
-        raise UploadValidationError("The upload size limit must be positive")
+    validate_filename(filename)
 
     destination_dir = settings.upload_dir / str(project_id)
     destination_dir.mkdir(parents=True, exist_ok=True)
@@ -48,19 +44,16 @@ async def store_pdf(
     try:
         with temporary_path.open("wb") as output:
             while chunk := await file.read(CHUNK_SIZE):
-                if first_chunk and not chunk.startswith(PDF_SIGNATURE):
-                    raise UploadValidationError("The uploaded file is not a PDF")
+                if first_chunk:
+                    validate_pdf_signature(chunk)
                 first_chunk = False
                 size_bytes += len(chunk)
-                if size_bytes > max_size:
-                    raise UploadValidationError(
-                        f"The PDF exceeds the {settings.max_upload_size_mb} MB limit"
-                    )
+                validate_size(size_bytes, settings.max_upload_size_mb)
                 digest.update(chunk)
                 output.write(chunk)
 
         if first_chunk:
-            raise UploadValidationError("The uploaded PDF is empty")
+            raise DocumentValidationError("The uploaded PDF is empty")
 
         content_hash = digest.hexdigest()
         destination_path = destination_dir / f"{content_hash}.pdf"

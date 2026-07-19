@@ -6,7 +6,8 @@ import pytest
 from fastapi import UploadFile
 
 from research_map.core.config import Settings
-from research_map.ingestion.storage import UploadValidationError, store_pdf
+from research_map.ingestion.storage import store_pdf
+from research_map.ingestion.validation import DocumentValidationError
 
 
 def test_store_pdf_hashes_and_deduplicates(tmp_path) -> None:
@@ -39,5 +40,5 @@ def test_store_pdf_rejects_non_pdf(tmp_path) -> None:
     settings = Settings(_env_file=None, upload_dir=tmp_path)
     upload = UploadFile(BytesIO(b"plain text"), filename="notes.txt")
 
-    with pytest.raises(UploadValidationError, match="not a PDF"):
+    with pytest.raises(DocumentValidationError, match="not a PDF"):
         asyncio.run(store_pdf(upload, uuid4(), settings))

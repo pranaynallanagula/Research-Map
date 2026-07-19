@@ -3,6 +3,8 @@ from pathlib import Path
 
 import pymupdf
 
+from research_map.ingestion.validation import validate_extracted_document
+
 
 class PDFExtractionError(ValueError):
     """Raised when a PDF cannot be opened or read."""
@@ -48,7 +50,9 @@ def extract_pdf(path: Path) -> ExtractedDocument:
     except (pymupdf.FileDataError, RuntimeError) as exc:
         raise PDFExtractionError(f"Unable to extract PDF: {path.name}") from exc
 
-    return ExtractedDocument(metadata=metadata, pages=pages)
+    extracted_document = ExtractedDocument(metadata=metadata, pages=pages)
+    validate_extracted_document(extracted_document)
+    return extracted_document
 
 
 def _extract_page(page: pymupdf.Page, page_index: int) -> ExtractedPage:
