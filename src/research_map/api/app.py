@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from research_map.api.routes.documents import router as documents_router
 from research_map.core.config import get_settings
 
 
@@ -15,6 +16,7 @@ def create_app() -> FastAPI:
         ),
         version="0.1.0",
     )
+    application.include_router(documents_router)
 
     @application.get("/health", tags=["system"])
     def health_check() -> dict[str, str]:

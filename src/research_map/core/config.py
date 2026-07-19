@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -20,6 +21,8 @@ class Settings(BaseSettings):
         "postgresql+psycopg://research_map:research_map@localhost:5432/research_map"
     )
     redis_url: str = "redis://localhost:6379/0"
+    upload_dir: Path = Path("data/uploads")
+    max_upload_size_mb: int = 25
     ai_api_key: SecretStr | None = None
     ai_base_url: str | None = None
     ai_model: str | None = None
